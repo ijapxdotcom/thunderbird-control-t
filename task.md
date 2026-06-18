@@ -7,4 +7,4 @@
 - [x] Criar launcher executável (ícone verde + .bat + atalho desktop)
 - [x] Rodar --test-mode e validar
 - [x] Criar walkthrough de uso
-- [/] Criar integração e sincronização de tasks com o GitHub
+- [x] Criar integração e sincronização de tasks com o GitHub
