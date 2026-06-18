@@ -20,11 +20,8 @@ echo.
 
 cd /d "c:\PIBIC\thunderbird-control-t"
 
-REM Ativar ambiente virtual
-call .venv\Scripts\activate.bat
-
-REM Executar o Compliance Agent
-python compliance_agent.py
+REM Executar o Compliance Agent utilizando o Python do ambiente virtual diretamente
+".venv\Scripts\python.exe" compliance_agent.py
 
 echo.
 echo   ════════════════════════════════════════════════════════
