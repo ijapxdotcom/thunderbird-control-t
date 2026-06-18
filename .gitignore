@@ -1,0 +1,15 @@
+# Virtual environment
+.venv/
+__pycache__/
+*.pyc
+
+# Local settings and keys
+.env
+
+# Output databases and secure files
+secure_attachments/
+secure_attachments_test/
+*.xlsx
+
+# Logs
+*.log
