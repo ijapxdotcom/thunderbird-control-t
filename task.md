@@ -1,0 +1,10 @@
+- [x] Criar routing_tables.py (Single Source of Truth)
+- [x] Reescrever gemini_pipeline.py (Routing Engine com IDs inteiros)
+- [x] Ajustar mbox_parser.py (extrair sender_email puro)
+- [x] Refatorar excel_handler.py (planilha profissional 4 abas)
+- [x] Reescrever compliance_agent.py (orquestrador v3)
+- [x] Atualizar .env (somente Zoho)
+- [x] Criar launcher executável (ícone verde + .bat + atalho desktop)
+- [x] Rodar --test-mode e validar
+- [x] Criar walkthrough de uso
+- [/] Criar integração e sincronização de tasks com o GitHub
