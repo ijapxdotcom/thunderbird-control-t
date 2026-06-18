@@ -124,9 +124,9 @@ def push_codebase(username, token, repo_name):
     """Configura o Git local e envia o código para o GitHub."""
     print("\nPreparing to push code to GitHub...")
     
-    # Adicionar arquivos pendentes (como task.md e o próprio github_sync.py)
-    subprocess.run(["git", "add", "task.md", "github_sync.py"], capture_output=True, shell=True)
-    subprocess.run(["git", "commit", "-m", "chore: add tasks file and github synchronization script"], capture_output=True, shell=True)
+    # Adicionar todos os arquivos modificados (incluindo README.md, .env.example, task.md)
+    subprocess.run(["git", "add", "."], capture_output=True, shell=True)
+    subprocess.run(["git", "commit", "-m", "chore: sync project files, tasks, and readme"], capture_output=True, shell=True)
 
     # Remover remote anterior para garantir que não há conflitos
     subprocess.run(["git", "remote", "remove", "origin"], capture_output=True, shell=True)
