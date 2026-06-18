@@ -103,6 +103,10 @@ def parse_mbox(mbox_path, window_hours=36, secure_attachments_dir="secure_attach
         subject = decode_mime_words(msg.get('subject', ''))
         sender = decode_mime_words(msg.get('from', ''))
         
+        # Extract pure email address from From header (e.g. "Name <user@domain>" → "user@domain")
+        _, sender_email = email.utils.parseaddr(sender)
+        sender_email = sender_email.strip() if sender_email else ""
+        
         body = ""
         pdf_text = ""
         saved_attachments = []
@@ -161,6 +165,7 @@ def parse_mbox(mbox_path, window_hours=36, secure_attachments_dir="secure_attach
             "message_id": message_id,
             "data_ingestao": msg_date.isoformat(),
             "remetente_original": sender,
+            "sender_email": sender_email,
             "assunto": subject,
             "body": body,
             "pdf_text": pdf_text,
