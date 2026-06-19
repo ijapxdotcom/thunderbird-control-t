@@ -8,3 +8,13 @@
 - [x] Rodar --test-mode e validar
 - [x] Criar walkthrough de uso
 - [x] Criar integração e sincronização de tasks com o GitHub
+- [ ] Implementar sistema robusto de logs estruturados e rotação de arquivos (RotatingFileHandler) para auditoria e compliance
+- [ ] Adicionar suporte a múltiplos canais de ingestão direta de e-mail (IMAP para Zoho/Gmail e leitura de arquivos Outlook PST)
+- [ ] Otimizar o mascarador LGPD (pii_masker.py) com suporte a termos/nomes personalizados configuráveis via JSON externo
+- [ ] Desenvolver suíte de testes unitários automatizados com PyTest para validar o fluxo de parsing de e-mails, roteamento de IA e mascaramento de PII
+- [ ] Integrar leitura e análise direta de documentos anexos (editais em PDF/DOCX) usando as capacidades multimodais do Gemini API
+- [ ] Implementar sistema de alertas automáticos em tempo real (SMTP Zoho ou Webhooks do Slack/Teams) para licitações de valor crítico (> R$ 5M)
+- [ ] Migrar o armazenamento e auditoria de dados para um banco relacional local (SQLite) ou em nuvem (PostgreSQL) com exportação para Excel sob demanda
+- [ ] Adicionar resiliência no processador do Excel (excel_handler.py) com retentativas automáticas e tratamento amigável de conflitos de arquivo aberto
+- [ ] Ampliar argumentos CLI (compliance_agent.py) para suportar filtros avançados por data, intervalo de horas específico e seleção de áreas operacionais
+- [ ] Desenvolver um dashboard executivo interativo em Streamlit para visualização ágil das métricas de licitações e controle manual de SLAs
