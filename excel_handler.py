@@ -1,23 +1,31 @@
 """
-excel_handler.py — Motor de Planilha Executiva v3.0
+excel_handler.py — Motor de Planilha Executiva v3.1
 4 Abas: Painel · Operação · Histórico · Arquivo
 Paleta: Azul Marinho (#1B365D) + Verde Esmeralda (#2E7D32)
 3 Dropdowns: Tema, Área Destino, Status
 Dashboard: KPIs + Semáforo SLA + Timeline + Alertas Diretoria
+
+v3.1 — Issue #18: Retry com exponential backoff no salvamento do Excel.
 """
 
 import os
+import time
+import shutil
 from datetime import datetime, timezone
+from pathlib import Path
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side, numbers
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
+from logger import get_logger
 from routing_tables import (
     THEMES, TARGET_AREAS, WORKFLOW_STATES, THEME_COLORS,
     format_br_datetime, format_br_date, calculate_sla_days,
     resolve_theme, resolve_target,
 )
+
+log = get_logger(__name__)
 
 # ============================================================
 #  CONSTANTES VISUAIS
@@ -429,15 +437,109 @@ def create_or_update_excel(excel_path: str, new_items: list):
         pass
 
     # ─────────────────────────────────────────────
-    # 8. SALVAR
+    # 8. SALVAR (com retry + exponential backoff)
     # ─────────────────────────────────────────────
+    _save_workbook_with_retry(wb, excel_path)
+
+
+# ============================================================
+#  SALVAMENTO COM RETRY (Issue #18)
+# ============================================================
+
+def _save_workbook_with_retry(
+    wb: openpyxl.Workbook,
+    excel_path: str,
+    max_attempts: int = 5,
+    initial_wait: float = 2.0,
+) -> None:
+    """
+    Salva o workbook com retry e exponential backoff.
+
+    Comportamento:
+      - Tenta salvar até max_attempts vezes.
+      - Intervalo entre tentativas: initial_wait * (2 ^ tentativa) segundos.
+      - Intervalos: 2s → 4s → 8s → 16s → 32s.
+      - Se todas as tentativas falharem, salva cópia de emergência na Área de Trabalho.
+      - Toda tentativa e resultado é registrado no logger estruturado.
+
+    Args:
+        wb: Workbook openpyxl a ser salvo.
+        excel_path: Caminho de destino do arquivo.
+        max_attempts: Número máximo de tentativas (padrão: 5).
+        initial_wait: Segundos de espera antes da 2ª tentativa (padrão: 2s).
+
+    Raises:
+        PermissionError: Se todas as tentativas falharem e o backup também falhar.
+    """
+    last_error: Exception | None = None
+
+    for attempt in range(1, max_attempts + 1):
+        try:
+            wb.save(excel_path)
+            if attempt == 1:
+                log.info("Planilha salva com sucesso: %s", excel_path)
+            else:
+                log.info(
+                    "Planilha salva na tentativa %d/%d: %s",
+                    attempt, max_attempts, excel_path,
+                )
+            print(f"  ✅ Planilha atualizada: {excel_path}")
+            return  # Sucesso — encerrar
+
+        except PermissionError as exc:
+            last_error = exc
+            wait_seconds = initial_wait * (2 ** (attempt - 1))  # 2, 4, 8, 16, 32
+
+            if attempt < max_attempts:
+                log.warning(
+                    "Tentativa %d/%d falhou (PermissionError — arquivo aberto no Excel?). "
+                    "Aguardando %.0fs antes de tentar novamente...",
+                    attempt, max_attempts, wait_seconds,
+                )
+                print(
+                    f"  ⚠ Arquivo em uso. Tentativa {attempt}/{max_attempts}. "
+                    f"Aguardando {wait_seconds:.0f}s... (feche o Excel para acelerar)"
+                )
+                time.sleep(wait_seconds)
+            else:
+                log.error(
+                    "Todas as %d tentativas de salvamento falharam: %s",
+                    max_attempts, excel_path,
+                )
+
+    # ── Fallback: Salvar cópia de emergência na Área de Trabalho ──
+    print(f"\n  ❌ ERRO CRÍTICO: Não foi possível salvar em: {excel_path}")
+    print(f"  O Excel ainda está com o arquivo aberto após {max_attempts} tentativas.")
+
     try:
-        wb.save(excel_path)
-        print(f"  ✅ Planilha atualizada: {excel_path}")
-    except PermissionError:
-        print(f"\n  ❌ ERRO: Não foi possível salvar em: {excel_path}")
-        print("  Feche o arquivo no Excel e tente novamente.\n")
-        raise
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        desktop = Path.home() / "Desktop"
+        # Verificar também o Desktop do OneDrive (configuração comum Windows/corporativo)
+        onedrive_desktop = (
+            Path.home() / "OneDrive - Grupo Mahvla" / "Área de Trabalho"
+        )
+        backup_dir = onedrive_desktop if onedrive_desktop.exists() else desktop
+        backup_path = str(backup_dir / f"control_t_backup_{timestamp}.xlsx")
+
+        wb.save(backup_path)
+        log.warning(
+            "Cópia de emergência salva em: %s (arquivo original bloqueado)",
+            backup_path,
+        )
+        print(f"  💾 CÓPIA DE EMERGÊNCIA salva em: {backup_path}")
+        print("  Feche o Excel e execute novamente para salvar no local correto.\n")
+
+    except Exception as backup_exc:
+        log.critical(
+            "Falha total: não foi possível salvar nem a cópia de emergência. "
+            "Erro original: %s | Erro backup: %s",
+            last_error, backup_exc,
+        )
+        print("  💥 FALHA TOTAL: Não foi possível salvar nem a cópia de emergência.")
+        raise PermissionError(
+            f"Falha ao salvar '{excel_path}' após {max_attempts} tentativas. "
+            f"Erro: {last_error}"
+        ) from last_error
 
 
 # ============================================================
